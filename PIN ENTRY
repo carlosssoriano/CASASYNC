@@ -1,0 +1,132 @@
+import java.awt.*;
+import java.awt.geom.Ellipse2D;
+import javax.swing.*;
+
+public class PinEntryUI {
+    public static void main(String[] args) {
+        SwingUtilities.invokeLater(() -> {
+            JFrame frame = new JFrame("Enter PIN");
+            frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+            frame.setSize(300, 600);
+            frame.setLocationRelativeTo(null);
+            frame.setLayout(new BorderLayout());
+
+            PinCirclePanel pinPanel = new PinCirclePanel();
+            frame.add(pinPanel, BorderLayout.CENTER);
+
+            frame.setVisible(true);
+        });
+    }
+}
+
+class PinCirclePanel extends JPanel {
+    private final JPasswordField passwordField;
+    private final StringBuilder pinBuilder = new StringBuilder();
+    private static final int PIN_LENGTH = 4;
+
+    public PinCirclePanel() {
+        setLayout(new BorderLayout());
+
+        passwordField = new JPasswordField(PIN_LENGTH);
+        passwordField.setFont(new Font("Montserrat", Font.BOLD, 24));
+        passwordField.setHorizontalAlignment(JTextField.CENTER);
+        passwordField.setEditable(false);
+        passwordField.setEchoChar('●');
+        passwordField.setBorder(BorderFactory.createEmptyBorder(20, 20, 20, 20));
+        add(passwordField, BorderLayout.NORTH);
+
+        JPanel keypad = new JPanel(new GridLayout(4, 3, 10, 10));
+        keypad.setBorder(BorderFactory.createEmptyBorder(20, 20, 20, 20));
+        String[] buttons = {
+                "1", "2", "3",
+                "4", "5", "6",
+                "7", "8", "9",
+                "Clear", "0", "Del"
+        };
+
+        for (String label : buttons) {
+            CircularButton btn = new CircularButton(label);
+            btn.setFont(new Font("Montserrat", Font.BOLD, 24));
+            btn.setForeground(Color.WHITE);
+            btn.setBackground(new Color(165, 205, 244));
+            btn.setFocusPainted(false);
+            btn.setBorderPainted(false);
+            btn.addActionListener(e -> handleButton(label));
+            keypad.add(btn);
+        }
+
+        add(keypad, BorderLayout.CENTER);
+    }
+
+    private void handleButton(String label) {
+        switch (label) {
+            case "Clear":
+                pinBuilder.setLength(0);
+                break;
+            case "Del":
+                if (pinBuilder.length() > 0)
+                    pinBuilder.deleteCharAt(pinBuilder.length() - 1);
+                break;
+            default: // Number
+                if (pinBuilder.length() < PIN_LENGTH)
+                    pinBuilder.append(label);
+                break;
+        }
+
+        passwordField.setText("*".repeat(pinBuilder.length()));
+
+        if (pinBuilder.length() == PIN_LENGTH) {
+            String pin = pinBuilder.toString();
+            System.out.println("Entered PIN: " + pin);
+            JOptionPane.showMessageDialog(this, "PIN Entered: " + pin);
+            pinBuilder.setLength(0);
+            passwordField.setText("");
+        }
+    }
+}
+
+// 🎨 Custom circular button
+class CircularButton extends JButton {
+    private Shape shape;
+    
+    public CircularButton(String text) {
+        super(text);
+        setContentAreaFilled(false);
+        setFocusPainted(false);
+        setBorderPainted(false);
+        setOpaque(false);
+    }
+
+    @Override
+    protected void paintComponent(Graphics g) {
+        Graphics2D g2 = (Graphics2D) g;
+        g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING,
+                            RenderingHints.VALUE_ANTIALIAS_ON);
+
+        // Background circle
+        if (getModel().isArmed()) {
+            g2.setColor(Color.GRAY);
+        } else {
+            g2.setColor(getBackground());
+        }
+
+        g2.fillOval(0, 0, getWidth(), getHeight());
+
+        // Label
+        super.paintComponent(g);
+    }
+
+    @Override
+    protected void paintBorder(Graphics g) {
+        g.setColor(getForeground());
+        g.drawOval(0, 0, getWidth() - 1, getHeight() - 1);
+    }
+
+    @Override
+    public boolean contains(int x, int y) {
+        if (shape == null || !shape.getBounds().equals(getBounds())) {
+            shape = new Ellipse2D.Float(0, 0, getWidth(), getHeight());
+        }
+        return shape.contains(x, y);
+    }
+}
