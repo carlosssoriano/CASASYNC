@@ -1,0 +1,47 @@
+import java.io.BufferedWriter;
+import java.io.FileWriter;
+import java.io.IOException;
+import java.util.Scanner;
+
+public class UserLogin2 {
+
+    public static void main(String[] args) {
+        try (Scanner sc = new Scanner(System.in)) {
+            System.out.println("LOG IN TO CASASYNC");
+            System.out.print("Enter your username: ");
+            String username = sc.nextLine().trim();
+
+            if (username.isEmpty()) {
+                System.out.println("Invalid Username... Exiting.");
+                return;
+            }
+
+            System.out.print("Enter your password: ");
+            String password = sc.nextLine().trim();
+
+            if (password.isEmpty()) {
+                System.out.println("Invalid Password... Exiting.");
+                return;
+            }
+
+            boolean saved = saveLogin(username, password);
+            if (saved) {
+                System.out.println("Login details saved successfully.");
+            } else {
+                System.out.println("Failed to save login details.");
+            }
+        }
+    }
+
+    private static boolean saveLogin(String username, String password) {
+        String entry = "Username: " + username + " | Password: " + password;
+        try (BufferedWriter writer = new BufferedWriter(new FileWriter("userlog.txt", true))) {
+            writer.write(entry);
+            writer.newLine();
+            return true;
+        } catch (IOException e) {
+            
+            return false;
+        }
+    }
+}
