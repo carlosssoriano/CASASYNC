@@ -1,0 +1,516 @@
+import java.awt.*;
+import javax.swing.*;
+import javax.swing.border.*;
+import java.io.BufferedWriter;
+import java.io.FileWriter;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.util.List;
+
+public class UserSaveLoginWithSignup {
+
+    private static final Color BACKGROUND_COLOR = Color.decode("#a5cdf4");
+    private static final Color CARD_BACKGROUND = Color.WHITE;
+    private static final Color TEXT_COLOR = Color.decode("#6b7280");
+    private static final Font HEADER_FONT = new Font("Segoe UI", Font.BOLD, 48);
+    private static final Font LABEL_FONT = new Font("Segoe UI", Font.PLAIN, 16);
+    private static final Font BUTTON_FONT = new Font("Segoe UI Semibold", Font.BOLD, 16);
+
+    private JFrame frame;
+    private JPanel mainPanel;
+    private CardLayout cardLayout;
+
+    // Components for Sign Up panel
+    private JTextField signUpUsernameField;
+    private JPasswordField signUpPasswordField;
+    private JLabel signUpMessageLabel;
+
+    // Components for Login panel
+    private JTextField loginUsernameField;
+    private JPasswordField loginPasswordField;
+    private JLabel loginMessageLabel;
+
+    // Components for User Editing panel (appears after login)
+    private JPanel userEditPanel;
+    private JTextArea userEditTextArea;
+    private JButton userSaveButton;
+    private JLabel userEditMessageLabel;
+
+    // File path to store users
+    private static final String USER_FILE = "userlog.txt";
+
+    // Keeps track of current logged in user for save actions
+    private String currentUser = null;
+
+    public UserSaveLoginWithSignup() {
+        initUI();
+    }
+
+    private void initUI() {
+        frame = new JFrame("CASASYNC Account");
+        frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+        frame.setSize(500, 700);
+        frame.setLocationRelativeTo(null);
+
+        // Custom panel with rounded background
+        JPanel roundedPanel = new JPanel() {
+            @Override
+            protected void paintComponent(Graphics g) {
+                super.paintComponent(g);
+                Graphics2D g2 = (Graphics2D) g;
+                g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+                g2.setColor(Color.decode("#ffffff"));
+                g2.fillRoundRect(0, 0, getWidth(), getHeight(), 40, 40);
+            }
+        };
+
+        roundedPanel.setLayout(new GridBagLayout());
+        roundedPanel.setOpaque(false); // important so background shows through
+
+        // CardLayout for swapping views
+        cardLayout = new CardLayout();
+        mainPanel = new JPanel(cardLayout);
+        mainPanel.setOpaque(false);
+        mainPanel.setPreferredSize(new Dimension(440, 600));
+
+        // Add Sign Up and Login cards
+        mainPanel.add(createSignUpPanel(), "signup");
+        mainPanel.add(createLoginPanel(), "login");
+        mainPanel.add(createUserEditPanel(), "useredit");
+
+        roundedPanel.add(mainPanel);
+        frame.setContentPane(roundedPanel);
+        frame.setVisible(true);
+
+        // Show Sign Up screen by default
+        cardLayout.show(mainPanel, "signup");
+    }
+
+    private JPanel createCardPanel() {
+        // Common panel style for cards
+        JPanel panel = new JPanel();
+        panel.setBackground(CARD_BACKGROUND);
+        panel.setLayout(new GridBagLayout());
+        panel.setBorder(BorderFactory.createEmptyBorder(20, 20, 20, 20));
+        panel.setOpaque(true);
+        return panel;
+    }
+
+    private JPanel createSignUpPanel() {
+        JPanel signUpPanel = createCardPanel();
+        GridBagConstraints gbc = new GridBagConstraints();
+        gbc.insets = new Insets(16, 0, 16, 0);
+        gbc.fill = GridBagConstraints.HORIZONTAL;
+        gbc.gridx = 0;
+        gbc.gridy = 0;
+        gbc.gridwidth = 2;
+
+        // Headline
+        JLabel headline = new JLabel("Create an Account");
+        headline.setFont(HEADER_FONT);
+        headline.setForeground(TEXT_COLOR);
+        headline.setHorizontalAlignment(SwingConstants.CENTER);
+        signUpPanel.add(headline, gbc);
+
+        gbc.gridwidth = 1;
+        gbc.gridy++;
+
+        // Username Label
+        JLabel userLabel = new JLabel("Username");
+        userLabel.setFont(LABEL_FONT);
+        userLabel.setForeground(TEXT_COLOR);
+        gbc.anchor = GridBagConstraints.WEST;
+        gbc.gridx = 0;
+        signUpPanel.add(userLabel, gbc);
+
+        // Username TextField
+        signUpUsernameField = new JTextField(20);
+        signUpUsernameField.setFont(LABEL_FONT);
+        gbc.gridx = 1;
+        signUpPanel.add(signUpUsernameField, gbc);
+
+        // Password Label
+        gbc.gridy++;
+        gbc.gridx = 0;
+        JLabel passLabel = new JLabel("Password");
+        passLabel.setFont(LABEL_FONT);
+        passLabel.setForeground(TEXT_COLOR);
+        signUpPanel.add(passLabel, gbc);
+
+        // Password Field
+        signUpPasswordField = new JPasswordField(20);
+        signUpPasswordField.setFont(LABEL_FONT);
+        gbc.gridx = 1;
+        signUpPanel.add(signUpPasswordField, gbc);
+
+        // Message Label
+        gbc.gridy++;
+        gbc.gridx = 0;
+        gbc.gridwidth = 2;
+        signUpMessageLabel = new JLabel(" ");
+        signUpMessageLabel.setFont(new Font("Segoe UI", Font.PLAIN, 14));
+        signUpMessageLabel.setForeground(Color.RED);
+        signUpMessageLabel.setHorizontalAlignment(SwingConstants.CENTER);
+        signUpPanel.add(signUpMessageLabel, gbc);
+
+        // Sign Up Button
+        gbc.gridy++;
+        JButton signUpButton = new JButton("Sign Up");
+        styleButton(signUpButton);
+        signUpPanel.add(signUpButton, gbc);
+
+        // "Already a member?" Button
+        gbc.gridy++;
+        JButton alreadyMemberButton = new JButton("Already a member? Log In");
+        alreadyMemberButton.setContentAreaFilled(false);
+        alreadyMemberButton.setBorderPainted(false);
+        alreadyMemberButton.setForeground(new Color(59, 130, 246)); // subtle blue link color
+        alreadyMemberButton.setFont(new Font("Segoe UI", Font.PLAIN, 14));
+        alreadyMemberButton.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+        signUpPanel.add(alreadyMemberButton, gbc);
+
+        // Sign Up button action
+        signUpButton.addActionListener(e -> {
+            String username = signUpUsernameField.getText().trim();
+            String password = new String(signUpPasswordField.getPassword()).trim();
+
+            if (username.isEmpty()) {
+                setSignUpMessage("Username cannot be empty", Color.RED);
+                return;
+            }
+
+            if (password.isEmpty()) {
+                setSignUpMessage("Password cannot be empty", Color.RED);
+                return;
+            }
+
+            if (userExists(username)) {
+                setSignUpMessage("Username already exists! Please log in.", Color.RED);
+                return;
+            }
+
+            boolean saved = saveLogin(username, password);
+            if (saved) {
+                setSignUpMessage("Sign up successful! You can now log in.", new Color(5, 150, 105));
+                signUpUsernameField.setText("");
+                signUpPasswordField.setText("");
+            } else {
+                setSignUpMessage("Failed to save your details.", Color.RED);
+            }
+        });
+
+        // Swap to login panel when clicking "Already a member?"
+        alreadyMemberButton.addActionListener(e -> {
+            setLoginMessage(" ", Color.RED);
+            cardLayout.show(mainPanel, "login");
+        });
+
+        return signUpPanel;
+    }
+
+    private JPanel createLoginPanel() {
+        JPanel loginPanel = createCardPanel();
+        GridBagConstraints gbc = new GridBagConstraints();
+        gbc.insets = new Insets(16, 0, 16, 0);
+        gbc.fill = GridBagConstraints.HORIZONTAL;
+        gbc.gridx = 0;
+        gbc.gridy = 0;
+        gbc.gridwidth = 2;
+
+        // Headline
+        JLabel headline = new JLabel("Log In");
+        headline.setFont(HEADER_FONT);
+        headline.setForeground(TEXT_COLOR);
+        headline.setHorizontalAlignment(SwingConstants.CENTER);
+        loginPanel.add(headline, gbc);
+
+        gbc.gridwidth = 1;
+        gbc.gridy++;
+
+        // Username Label
+        JLabel userLabel = new JLabel("Username");
+        userLabel.setFont(LABEL_FONT);
+        userLabel.setForeground(TEXT_COLOR);
+        gbc.anchor = GridBagConstraints.WEST;
+        gbc.gridx = 0;
+        loginPanel.add(userLabel, gbc);
+
+        // Username TextField
+        loginUsernameField = new JTextField(20);
+        loginUsernameField.setFont(LABEL_FONT);
+        gbc.gridx = 1;
+        loginPanel.add(loginUsernameField, gbc);
+
+        // Password Label
+        gbc.gridy++;
+        gbc.gridx = 0;
+        JLabel passLabel = new JLabel("Password");
+        passLabel.setFont(LABEL_FONT);
+        passLabel.setForeground(TEXT_COLOR);
+        loginPanel.add(passLabel, gbc);
+
+        // Password Field
+        loginPasswordField = new JPasswordField(20);
+        loginPasswordField.setFont(LABEL_FONT);
+        gbc.gridx = 1;
+        loginPanel.add(loginPasswordField, gbc);
+
+        // Message Label
+        gbc.gridy++;
+        gbc.gridx = 0;
+        gbc.gridwidth = 2;
+        loginMessageLabel = new JLabel(" ");
+        loginMessageLabel.setFont(new Font("Segoe UI", Font.PLAIN, 14));
+        loginMessageLabel.setForeground(Color.RED);
+        loginMessageLabel.setHorizontalAlignment(SwingConstants.CENTER);
+        loginPanel.add(loginMessageLabel, gbc);
+
+        // Login Button
+        gbc.gridy++;
+        JButton loginButton = new JButton("Log In");
+        styleButton(loginButton);
+        loginPanel.add(loginButton, gbc);
+
+        // Back to Sign Up Button
+        gbc.gridy++;
+        JButton backToSignUpButton = new JButton("Back to Sign Up");
+        backToSignUpButton.setContentAreaFilled(false);
+        backToSignUpButton.setBorderPainted(false);
+        backToSignUpButton.setForeground(new Color(59, 130, 246));
+        backToSignUpButton.setFont(new Font("Segoe UI", Font.PLAIN, 14));
+        backToSignUpButton.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+        loginPanel.add(backToSignUpButton, gbc);
+
+        // Login button action
+        loginButton.addActionListener(e -> {
+            String username = loginUsernameField.getText().trim();
+            String password = new String(loginPasswordField.getPassword()).trim();
+
+            if (username.isEmpty()) {
+                setLoginMessage("Username cannot be empty", Color.RED);
+                return;
+            }
+
+            if (password.isEmpty()) {
+                setLoginMessage("Password cannot be empty", Color.RED);
+                return;
+            }
+
+            if (!userExists(username)) {
+                setLoginMessage("No account found. Please sign up first.", Color.RED);
+                return;
+            }
+
+            // Optionally verify password matches saved password here
+            // For now, just accept login and save login event
+            boolean saved = saveLogin(username, password);
+            if (saved) {
+                setLoginMessage("Login successful!", new Color(5, 150, 105));
+                loginUsernameField.setText("");
+                loginPasswordField.setText("");
+
+                currentUser = username;
+                loadUserEditContent(username);
+                cardLayout.show(mainPanel, "useredit");
+
+            } else {
+                setLoginMessage("Failed to save login details.", Color.RED);
+            }
+        });
+
+        // Back to Sign Up action
+        backToSignUpButton.addActionListener(e -> {
+            setSignUpMessage(" ", Color.RED);
+            cardLayout.show(mainPanel, "signup");
+        });
+
+        return loginPanel;
+    }
+
+    private JPanel createUserEditPanel() {
+        userEditPanel = createCardPanel();
+        GridBagConstraints gbc = new GridBagConstraints();
+        gbc.insets = new Insets(12, 0, 12, 0);
+        gbc.fill = GridBagConstraints.BOTH;
+
+        gbc.gridx = 0;
+        gbc.gridy = 0;
+        gbc.weightx = 1.0;
+        gbc.weighty = 0;
+
+        // Headline
+        JLabel headline = new JLabel("User Account Editor");
+        headline.setFont(HEADER_FONT.deriveFont(28f));
+        headline.setForeground(TEXT_COLOR);
+        headline.setHorizontalAlignment(SwingConstants.CENTER);
+        userEditPanel.add(headline, gbc);
+
+        gbc.gridy++;
+        gbc.weighty = 1.0;
+
+        // Text area for user edit content
+        userEditTextArea = new JTextArea();
+        userEditTextArea.setFont(LABEL_FONT);
+        userEditTextArea.setLineWrap(true);
+        userEditTextArea.setWrapStyleWord(true);
+        JScrollPane scrollPane = new JScrollPane(userEditTextArea);
+        scrollPane.setPreferredSize(new Dimension(400, 300));
+        gbc.fill = GridBagConstraints.BOTH;
+        userEditPanel.add(scrollPane, gbc);
+
+        gbc.gridy++;
+        gbc.weighty = 0;
+        gbc.fill = GridBagConstraints.NONE;
+
+        // Message Label for save feedback
+        userEditMessageLabel = new JLabel(" ");
+        userEditMessageLabel.setFont(new Font("Segoe UI", Font.PLAIN, 14));
+        userEditMessageLabel.setForeground(new Color(5, 150, 105)); // green by default
+        userEditMessageLabel.setHorizontalAlignment(SwingConstants.CENTER);
+        userEditPanel.add(userEditMessageLabel, gbc);
+
+        gbc.gridy++;
+        // Save Button
+        userSaveButton = new JButton("Save Changes");
+        styleButton(userSaveButton);
+        userEditPanel.add(userSaveButton, gbc);
+
+        gbc.gridy++;
+        // Logout Button
+        JButton logoutButton = new JButton("Log Out");
+        logoutButton.setForeground(new Color(59, 130, 246));
+        logoutButton.setFont(new Font("Segoe UI", Font.PLAIN, 14));
+        logoutButton.setContentAreaFilled(false);
+        logoutButton.setBorderPainted(false);
+        logoutButton.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+        userEditPanel.add(logoutButton, gbc);
+
+        userSaveButton.addActionListener(e -> {
+            if (currentUser != null) {
+                String content = userEditTextArea.getText();
+                boolean saved = saveUserActionContent(currentUser, content);
+                if (saved) {
+                    setUserEditMessage("Changes saved successfully.", new Color(5, 150, 105));
+                } else {
+                    setUserEditMessage("Failed to save changes.", Color.RED);
+                }
+            }
+        });
+
+        logoutButton.addActionListener(e -> {
+            currentUser = null;
+            userEditTextArea.setText("");
+            userEditMessageLabel.setText(" ");
+            setLoginMessage(" ", Color.RED);
+            cardLayout.show(mainPanel, "login");
+        });
+
+        return userEditPanel;
+    }
+
+    private void setSignUpMessage(String message, Color color) {
+        signUpMessageLabel.setText(message);
+        signUpMessageLabel.setForeground(color);
+    }
+
+    private void setLoginMessage(String message, Color color) {
+        loginMessageLabel.setText(message);
+        loginMessageLabel.setForeground(color);
+    }
+
+    private void setUserEditMessage(String message, Color color) {
+        userEditMessageLabel.setText(message);
+        userEditMessageLabel.setForeground(color);
+    }
+
+    private void styleButton(JButton button) {
+        button.setFont(BUTTON_FONT);
+        button.setBackground(Color.BLACK);
+        button.setForeground(Color.WHITE);
+        button.setFocusPainted(false);
+        button.setBorder(BorderFactory.createEmptyBorder(12, 24, 12, 24));
+
+        // Hover effect
+        button.addMouseListener(new java.awt.event.MouseAdapter() {
+            public void mouseEntered(java.awt.event.MouseEvent evt) {
+                button.setBackground(new Color(30, 30, 30));
+            }
+            public void mouseExited(java.awt.event.MouseEvent evt) {
+                button.setBackground(Color.BLACK);
+            }
+        });
+    }
+
+    private boolean saveLogin(String username, String password) {
+        String entry = "Username: " + username + " | Password: " + password;
+        try (BufferedWriter writer = new BufferedWriter(new FileWriter(USER_FILE, true))) {
+            writer.write(entry);
+            writer.newLine();
+            return true;
+        } catch (IOException e) {
+            e.printStackTrace();
+            return false;
+        }
+    }
+
+    private boolean userExists(String username) {
+        try {
+            if (!Files.exists(Path.of(USER_FILE))) {
+                return false;
+            }
+            List<String> lines = Files.readAllLines(Path.of(USER_FILE));
+            for (String line : lines) {
+                // Line format: Username: xxx | Password: yyy
+                if (line.startsWith("Username: ")) {
+                    String savedUser = line.substring(10, line.indexOf(" | Password:")).trim();
+                    if (savedUser.equalsIgnoreCase(username)) {
+                        return true;
+                    }
+                }
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        return false;
+    }
+
+    private boolean saveUserActionContent(String username, String content) {
+        String userLogFile = username + "_actions.txt";
+        try (BufferedWriter writer = new BufferedWriter(new FileWriter(userLogFile, false))) {
+            writer.write(content);
+            return true;
+        } catch (IOException e) {
+            e.printStackTrace();
+            return false;
+        }
+    }
+
+    private void loadUserEditContent(String username) {
+        String userLogFile = username + "_actions.txt";
+        try {
+            if (Files.exists(Path.of(userLogFile))) {
+                List<String> lines = Files.readAllLines(Path.of(userLogFile));
+                StringBuilder content = new StringBuilder();
+                for (String line: lines) {
+                    content.append(line).append("\n");
+                }
+                userEditTextArea.setText(content.toString());
+            } else {
+                userEditTextArea.setText("");
+            }
+            userEditMessageLabel.setText(" ");
+        } catch (IOException e) {
+            e.printStackTrace();
+            userEditTextArea.setText("");
+            userEditMessageLabel.setText("Failed to load your content.");
+            userEditMessageLabel.setForeground(Color.RED);
+        }
+    }
+
+    // Main method
+    public static void main(String[] args) {
+        SwingUtilities.invokeLater(UserSaveLoginWithSignup::new);
+    }
+}
+
