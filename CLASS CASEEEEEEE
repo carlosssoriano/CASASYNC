@@ -1,0 +1,28 @@
+Create Account Class and Data Manager Class
+- In our house inventory program, the Create Account Class and Data Manager Class work hand-in-hand to ensure your house listings are always saved.
+- However, by itself, the Create Account Class doesn't have the ability to store this information permanently. That's where the Data Manager Class comes in. from the Create Account Class and securely saving it to a file or database.
+
+Create Account and LogIn 
+- This means you must use the Create Account class first to establish your identity and save your credentials. Only then can the LogIn class successfully verify who you are and grant you access.
+
+LogIn and PIN Entry
+- In our program, the LogIn process and the PIN Entry are two essential steps that work together. 
+- Once your username and password are authenticated, the program then requires PIN Entry. This is an additional layer of security where you must provide a specific personal identification number
+
+PIN entry and Main Menu
+- You cannot enter the Main Menu if the PIN you provide is incorrect. The system will prevent access until the correct PIN is entered.
+
+Add Category and Main Menu 
+- Main Menu provides the gateway to browse and select these categories. You access the Main Menu to then choose which specific category of houses you want to view or manage.
+
+New Category and Add Category 
+- You cannot effectively introduce a New Category into your inventory management system unless the Add Category functionality is present and utilized. 
+
+New Category and Abstract Class
+- This means that when you create a "New Category," it automatically gets all the fundamental characteristics and methods defined in the Abstract Class.
+
+Default Categories and Abstract class 
+- Similar to how new categories are structured, our Default Categories also have a relationship with an Abstract Class through generalization and inheritance.
+
+Abstract Class and Data manager
+- Abstract Class provides the common blueprint for data, the Data Manager is the essential component that associates with and manages the persistence of all actual data objects that follow that blueprint.
